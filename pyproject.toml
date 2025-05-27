@@ -4,4 +4,10 @@ version = "0.1.0"
 description = "Python library to build data products"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "setuptools>=80.9.0",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
