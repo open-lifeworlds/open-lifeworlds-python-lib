@@ -106,7 +106,13 @@ def blend_data(
 
                                         # Iterate over attributes
                                         for attribute in source_file.attributes:
-                                            if attribute.name in statistic_filtered and len(statistic_filtered[attribute.name]) > 0:
+                                            if (
+                                                attribute.name in statistic_filtered
+                                                and len(
+                                                    statistic_filtered[attribute.name]
+                                                )
+                                                > 0
+                                            ):
                                                 # Look up value
                                                 value = statistic_filtered[
                                                     attribute.name
@@ -121,7 +127,12 @@ def blend_data(
                                             elif (
                                                 attribute.numerator
                                                 in statistic_filtered
-                                                and len(statistic_filtered[attribute.numerator]) > 0
+                                                and len(
+                                                    statistic_filtered[
+                                                        attribute.numerator
+                                                    ]
+                                                )
+                                                > 0
                                                 and attribute.denominator_area_sqkm
                                             ):
                                                 # Look up value
