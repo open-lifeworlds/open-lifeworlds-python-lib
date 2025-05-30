@@ -34,7 +34,7 @@ def update_data_product_manifest(
                 repo_organization = (
                     data_product_manifest.metadata.owner.lower().replace(" ", "-")
                 )
-                repo = f"open-data-product-{data_product_manifest.id}"
+                repo = f"open-lifeworlds-data-product-{data_product_manifest.id}"
 
                 existing_output_port = (
                     next(
