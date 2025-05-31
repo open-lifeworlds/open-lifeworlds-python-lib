@@ -47,7 +47,7 @@ def generate_geojson_property_completeness_metrics(
 
                         for feature in geojson["features"]:
                             if all(
-                                f"{source_file.source_file_prefix}{property}"
+                                f"{source_file.source_file_prefix}{property.name}"
                                 in feature["properties"]
                                 for property in source_file.attributes
                             ):

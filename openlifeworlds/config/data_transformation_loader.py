@@ -12,10 +12,17 @@ from openlifeworlds.tracking_decorator import TrackingDecorator
 
 
 @dataclass
+class Attribute:
+    name: str
+    numerator: Optional[str] = None
+    denominator_area_sqkm: Optional[bool] = False
+
+
+@dataclass
 class SourceFile:
     source_file_name: str
     source_file_prefix: Optional[str] = ""
-    attributes: Optional[List[str]] = field(default_factory=list)
+    attributes: Optional[List[Attribute]] = field(default_factory=list)
 
 
 @dataclass

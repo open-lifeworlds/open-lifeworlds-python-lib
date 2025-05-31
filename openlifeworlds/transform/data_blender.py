@@ -81,38 +81,52 @@ def blend_data(
                                         geojson["features"],
                                         key=lambda feature: feature["properties"]["id"],
                                     ):
+                                        id = feature["properties"]["id"]
+                                        area_sqm = feature["properties"]["area"]
+                                        area_sqkm = (
+                                            feature["properties"]["area"] / 1_000_000
+                                        )
+
                                         # Build statistics structure
-                                        if (
-                                            feature["properties"]["id"]
-                                            not in json_statistics[year][half_year]
-                                        ):
-                                            json_statistics[year][half_year][
-                                                feature["properties"]["id"]
-                                            ] = {}
+                                        if id not in json_statistics[year][half_year]:
+                                            json_statistics[year][half_year][id] = {}
 
                                         # Filter statistics
                                         statistic_filtered = csv_statistics[
-                                            csv_statistics["id"].astype(str)
-                                            == str(feature["properties"]["id"])
+                                            csv_statistics["id"].astype(str) == str(id)
                                         ]
 
                                         # Add ID and name attribute
-                                        json_statistics[year][half_year][
-                                            feature["properties"]["id"]
-                                        ]["id"] = feature["properties"]["id"]
-                                        json_statistics[year][half_year][
-                                            feature["properties"]["id"]
-                                        ]["name"] = (
+                                        json_statistics[year][half_year][id]["id"] = id
+                                        json_statistics[year][half_year][id]["name"] = (
                                             feature["properties"]["name"]
                                             if "name" in feature["properties"]
-                                            else feature["properties"]["id"]
+                                            else id
                                         )
 
                                         # Iterate over attributes
                                         for attribute in source_file.attributes:
-                                            if not statistic_filtered[attribute].empty:
+                                            if attribute.name in statistic_filtered and len(statistic_filtered[attribute.name]) > 0:
+                                                # Look up value
                                                 value = statistic_filtered[
-                                                    attribute
+                                                    attribute.name
+                                                ].iloc[0]
+
+                                                # Convert value to float or int
+                                                value = (
+                                                    float(value)
+                                                    if "." in str(value)
+                                                    else int(value)
+                                                )
+                                            elif (
+                                                attribute.numerator
+                                                in statistic_filtered
+                                                and len(statistic_filtered[attribute.numerator]) > 0
+                                                and attribute.denominator_area_sqkm
+                                            ):
+                                                # Look up value
+                                                value = statistic_filtered[
+                                                    attribute.numerator
                                                 ].iloc[0]
 
                                                 # Convert value to float or int
@@ -122,14 +136,24 @@ def blend_data(
                                                     else int(value)
                                                 )
 
-                                                feature["properties"][
-                                                    f"{source_file.source_file_prefix}{attribute}"
-                                                ] = value
-                                                json_statistics[year][half_year][
-                                                    feature["properties"]["id"]
-                                                ][
-                                                    f"{source_file.source_file_prefix}{attribute}"
-                                                ] = value
+                                                # Divide value by area in sqkm
+                                                value /= area_sqkm
+                                            else:
+                                                continue
+
+                                            # Convert value to float or int
+                                            value = (
+                                                float(value)
+                                                if "." in str(value)
+                                                else int(value)
+                                            )
+
+                                            feature["properties"][
+                                                f"{source_file.source_file_prefix}{attribute.name}"
+                                            ] = value
+                                            json_statistics[year][half_year][id][
+                                                f"{source_file.source_file_prefix}{attribute.name}"
+                                            ] = value
 
                     # Save target geojson
                     if clean or not os.path.exists(target_file_path):
