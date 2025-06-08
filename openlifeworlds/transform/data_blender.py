@@ -118,12 +118,15 @@ def blend_data(
                                                     attribute.name
                                                 ].iloc[0]
 
-                                                # Convert value to float or int
-                                                value = (
-                                                    float(value)
-                                                    if "." in str(value)
-                                                    else int(value)
-                                                )
+                                                try:
+                                                    # Convert value to float or int
+                                                    value = (
+                                                        float(value)
+                                                        if "." in str(value)
+                                                        else int(value)
+                                                    )
+                                                except:
+                                                    pass
                                             elif (
                                                 attribute.numerator
                                                 in statistic_filtered
@@ -140,6 +143,22 @@ def blend_data(
                                                     attribute.numerator
                                                 ].iloc[0]
 
+                                                try:
+                                                    # Convert value to float or int
+                                                    value = (
+                                                        float(value)
+                                                        if "." in str(value)
+                                                        else int(value)
+                                                    )
+
+                                                    # Divide value by area in sqkm
+                                                    value /= area_sqkm
+                                                except:
+                                                    pass
+                                            else:
+                                                continue
+
+                                            try:
                                                 # Convert value to float or int
                                                 value = (
                                                     float(value)
@@ -147,24 +166,14 @@ def blend_data(
                                                     else int(value)
                                                 )
 
-                                                # Divide value by area in sqkm
-                                                value /= area_sqkm
-                                            else:
-                                                continue
-
-                                            # Convert value to float or int
-                                            value = (
-                                                float(value)
-                                                if "." in str(value)
-                                                else int(value)
-                                            )
-
-                                            feature["properties"][
-                                                f"{source_file.source_file_prefix}{attribute.name}"
-                                            ] = value
-                                            json_statistics[year][half_year][id][
-                                                f"{source_file.source_file_prefix}{attribute.name}"
-                                            ] = value
+                                                feature["properties"][
+                                                    f"{source_file.source_file_prefix}{attribute.name}"
+                                                ] = value
+                                                json_statistics[year][half_year][id][
+                                                    f"{source_file.source_file_prefix}{attribute.name}"
+                                                ] = value
+                                            except:
+                                                pass
 
                     # Save target geojson
                     if clean or not os.path.exists(target_file_path):
