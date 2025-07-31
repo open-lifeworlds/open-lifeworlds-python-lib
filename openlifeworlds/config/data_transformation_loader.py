@@ -16,6 +16,7 @@ class Attribute:
     name: str
     numerator: Optional[str] = None
     denominator_area_sqkm: Optional[bool] = False
+    denominator_inhabitants: Optional[bool] = False
 
 
 @dataclass
@@ -28,6 +29,7 @@ class SourceFile:
 @dataclass
 class File:
     geojson_template_file_name: Optional[str]
+    population_file_name: Optional[str]
     target_file_name: Optional[str]
     source_files: Optional[List[SourceFile]] = field(default_factory=list)
 

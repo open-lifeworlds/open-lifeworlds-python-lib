@@ -57,123 +57,142 @@ def blend_data(
 
                 try:
                     # Load template geojson
-                    with open(
-                        file=geojson_template_file_path, mode="r", encoding="utf-8"
-                    ) as geojson_file:
-                        geojson = json.load(geojson_file, strict=False)
+                    geojson = load_geojson_file(geojson_template_file_path)
 
-                        # Iterate over source files
-                        for source_file in file.source_files or []:
-                            source_file_path = os.path.join(
-                                source_path, input_port.id, source_file.source_file_name
-                            )
+                    # Iterate over source files
+                    for source_file in file.source_files or []:
+                        source_file_path = os.path.join(
+                            source_path, input_port.id, source_file.source_file_name
+                        )
 
-                            # Load statistics
-                            with open(source_file_path, "r") as csv_file:
-                                csv_statistics = pd.read_csv(csv_file, dtype=str)
+                        # Load statistics
+                        csv_statistics = load_csv_file(source_file_path)
 
-                                if (
-                                    file.target_file_name is not None
-                                    and file.geojson_template_file_name is not None
-                                ):
-                                    # Iterate over features
-                                    for feature in sorted(
-                                        geojson["features"],
-                                        key=lambda feature: feature["properties"]["id"],
+                        if (
+                            file.target_file_name is not None
+                            and file.geojson_template_file_name is not None
+                        ):
+                            # Iterate over features
+                            for feature in sorted(
+                                geojson["features"],
+                                key=lambda feature: feature["properties"]["id"],
+                            ):
+                                id = feature["properties"]["id"]
+                                area_sqm = feature["properties"]["area"]
+                                area_sqkm = area_sqm / 1_000_000
+
+                                population = 0
+                                if file.population_file_name is not None:
+                                    csv_population_dataframe = load_csv_file(
+                                        os.path.join(source_path, file.population_file_name)
+                                    )
+                                    population = csv_population_dataframe \
+                                    .loc[csv_population_dataframe["id"] == id] \
+                                    .iloc[0]["inhabitants"]
+
+                                # Build statistics structure
+                                if id not in json_statistics[year][half_year]:
+                                    json_statistics[year][half_year][id] = {}
+
+                                # Filter statistics
+                                statistic_filtered = csv_statistics[
+                                    csv_statistics["id"].astype(str) == str(id)
+                                ]
+
+                                # Add ID and name attribute
+                                json_statistics[year][half_year][id]["id"] = id
+                                json_statistics[year][half_year][id]["name"] = (
+                                    feature["properties"]["name"]
+                                    if "name" in feature["properties"]
+                                    else id
+                                )
+
+                                # Iterate over attributes
+                                for attribute in source_file.attributes:
+                                    if (
+                                        attribute.name in statistic_filtered
+                                        and len(statistic_filtered[attribute.name]) > 0
                                     ):
-                                        id = feature["properties"]["id"]
-                                        area_sqm = feature["properties"]["area"]
-                                        area_sqkm = (
-                                            feature["properties"]["area"] / 1_000_000
-                                        )
-
-                                        # Build statistics structure
-                                        if id not in json_statistics[year][half_year]:
-                                            json_statistics[year][half_year][id] = {}
-
-                                        # Filter statistics
-                                        statistic_filtered = csv_statistics[
-                                            csv_statistics["id"].astype(str) == str(id)
+                                        # Look up value
+                                        value = statistic_filtered[attribute.name].iloc[
+                                            0
                                         ]
 
-                                        # Add ID and name attribute
-                                        json_statistics[year][half_year][id]["id"] = id
-                                        json_statistics[year][half_year][id]["name"] = (
-                                            feature["properties"]["name"]
-                                            if "name" in feature["properties"]
-                                            else id
+                                        try:
+                                            # Convert value to float or int
+                                            value = (
+                                                float(value)
+                                                if "." in str(value)
+                                                else int(value)
+                                            )
+                                        except:
+                                            pass
+                                    elif (
+                                        attribute.numerator in statistic_filtered
+                                        and len(statistic_filtered[attribute.numerator])
+                                        > 0
+                                        and attribute.denominator_area_sqkm
+                                    ):
+                                        # Look up value
+                                        value = statistic_filtered[
+                                            attribute.numerator
+                                        ].iloc[0]
+
+                                        try:
+                                            # Convert value to float or int
+                                            value = (
+                                                float(value)
+                                                if "." in str(value)
+                                                else int(value)
+                                            )
+
+                                            # Divide value by area in sqkm
+                                            value /= area_sqkm
+                                        except:
+                                            pass
+                                    elif (
+                                        attribute.numerator in statistic_filtered
+                                        and len(statistic_filtered[attribute.numerator])
+                                        > 0
+                                        and attribute.denominator_inhabitants
+                                        and population != 0
+                                    ):
+                                        # Look up value
+                                        value = statistic_filtered[
+                                            attribute.numerator
+                                        ].iloc[0]
+
+                                        try:
+                                            # Convert value to float or int
+                                            value = (
+                                                float(value)
+                                                if "." in str(value)
+                                                else int(value)
+                                            )
+
+                                            # Divide value by population
+                                            value /= population
+                                        except:
+                                            pass
+                                    else:
+                                        continue
+
+                                    try:
+                                        # Convert value to float or int
+                                        value = (
+                                            float(value)
+                                            if "." in str(value)
+                                            else int(value)
                                         )
 
-                                        # Iterate over attributes
-                                        for attribute in source_file.attributes:
-                                            if (
-                                                attribute.name in statistic_filtered
-                                                and len(
-                                                    statistic_filtered[attribute.name]
-                                                )
-                                                > 0
-                                            ):
-                                                # Look up value
-                                                value = statistic_filtered[
-                                                    attribute.name
-                                                ].iloc[0]
-
-                                                try:
-                                                    # Convert value to float or int
-                                                    value = (
-                                                        float(value)
-                                                        if "." in str(value)
-                                                        else int(value)
-                                                    )
-                                                except:
-                                                    pass
-                                            elif (
-                                                attribute.numerator
-                                                in statistic_filtered
-                                                and len(
-                                                    statistic_filtered[
-                                                        attribute.numerator
-                                                    ]
-                                                )
-                                                > 0
-                                                and attribute.denominator_area_sqkm
-                                            ):
-                                                # Look up value
-                                                value = statistic_filtered[
-                                                    attribute.numerator
-                                                ].iloc[0]
-
-                                                try:
-                                                    # Convert value to float or int
-                                                    value = (
-                                                        float(value)
-                                                        if "." in str(value)
-                                                        else int(value)
-                                                    )
-
-                                                    # Divide value by area in sqkm
-                                                    value /= area_sqkm
-                                                except:
-                                                    pass
-                                            else:
-                                                continue
-
-                                            try:
-                                                # Convert value to float or int
-                                                value = (
-                                                    float(value)
-                                                    if "." in str(value)
-                                                    else int(value)
-                                                )
-
-                                                feature["properties"][
-                                                    f"{source_file.source_file_prefix}{attribute.name}"
-                                                ] = value
-                                                json_statistics[year][half_year][id][
-                                                    f"{source_file.source_file_prefix}{attribute.name}"
-                                                ] = value
-                                            except:
-                                                pass
+                                        feature["properties"][
+                                            f"{source_file.source_file_prefix}{attribute.name}"
+                                        ] = value
+                                        json_statistics[year][half_year][id][
+                                            f"{source_file.source_file_prefix}{attribute.name}"
+                                        ] = value
+                                    except:
+                                        pass
 
                     # Save target geojson
                     if clean or not os.path.exists(target_file_path):
@@ -216,3 +235,17 @@ def blend_data(
     print(
         f"blend_data finished with already_exists: {already_exists}, converted: {converted}, exception: {exception}"
     )
+
+
+def load_geojson_file(geojson_template_file_path):
+    with open(
+        file=geojson_template_file_path, mode="r", encoding="utf-8"
+    ) as geojson_file:
+        geojson = json.load(geojson_file, strict=False)
+        return geojson
+
+
+def load_csv_file(source_file_path):
+    with open(source_file_path, "r") as csv_file:
+        csv = pd.read_csv(csv_file, dtype=str)
+        return csv
