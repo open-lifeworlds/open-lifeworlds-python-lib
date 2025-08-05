@@ -84,11 +84,13 @@ def blend_data(
                                 population = 0
                                 if file.population_file_name is not None:
                                     csv_population_dataframe = load_csv_file(
-                                        os.path.join(source_path, file.population_file_name)
+                                        os.path.join(
+                                            source_path, file.population_file_name
+                                        )
                                     )
-                                    population = csv_population_dataframe \
-                                    .loc[csv_population_dataframe["id"] == id] \
-                                    .iloc[0]["inhabitants"]
+                                    population = csv_population_dataframe.loc[
+                                        csv_population_dataframe["id"] == id
+                                    ].iloc[0]["inhabitants"]
 
                                 # Build statistics structure
                                 if id not in json_statistics[year][half_year]:
@@ -109,6 +111,8 @@ def blend_data(
 
                                 # Iterate over attributes
                                 for attribute in source_file.attributes:
+                                    value = 0
+
                                     if (
                                         attribute.name in statistic_filtered
                                         and len(statistic_filtered[attribute.name]) > 0
@@ -117,14 +121,31 @@ def blend_data(
                                         value = statistic_filtered[attribute.name].iloc[
                                             0
                                         ]
+                                    elif (
+                                        attribute.numerator in statistic_filtered
+                                        and len(statistic_filtered[attribute.numerator])
+                                        > 0
+                                        and attribute.denominator in statistic_filtered
+                                        and len(
+                                            statistic_filtered[attribute.denominator]
+                                        )
+                                        > 0
+                                    ):
+                                        # Look up value
+                                        numerator = statistic_filtered[
+                                            attribute.numerator
+                                        ].iloc[0]
+                                        denominator = statistic_filtered[
+                                            attribute.denominator
+                                        ].iloc[0]
 
                                         try:
                                             # Convert value to float or int
-                                            value = (
-                                                float(value)
-                                                if "." in str(value)
-                                                else int(value)
-                                            )
+                                            numerator = float(numerator)
+                                            denominator = float(denominator)
+
+                                            # Divide numerator by denominator
+                                            value = numerator / denominator
                                         except:
                                             pass
                                     elif (
@@ -134,20 +155,16 @@ def blend_data(
                                         and attribute.denominator_area_sqkm
                                     ):
                                         # Look up value
-                                        value = statistic_filtered[
+                                        numerator = statistic_filtered[
                                             attribute.numerator
                                         ].iloc[0]
 
                                         try:
                                             # Convert value to float or int
-                                            value = (
-                                                float(value)
-                                                if "." in str(value)
-                                                else int(value)
-                                            )
+                                            numerator = float(numerator)
 
                                             # Divide value by area in sqkm
-                                            value /= area_sqkm
+                                            value = numerator / area_sqkm
                                         except:
                                             pass
                                     elif (
@@ -158,20 +175,16 @@ def blend_data(
                                         and population != 0
                                     ):
                                         # Look up value
-                                        value = statistic_filtered[
+                                        numerator = statistic_filtered[
                                             attribute.numerator
                                         ].iloc[0]
 
                                         try:
                                             # Convert value to float or int
-                                            value = (
-                                                float(value)
-                                                if "." in str(value)
-                                                else int(value)
-                                            )
+                                            numerator = float(numerator)
 
                                             # Divide value by population
-                                            value /= population
+                                            value = numerator / population
                                         except:
                                             pass
                                     else:

@@ -15,6 +15,7 @@ from openlifeworlds.tracking_decorator import TrackingDecorator
 class Attribute:
     name: str
     numerator: Optional[str] = None
+    denominator: Optional[str] = None
     denominator_area_sqkm: Optional[bool] = False
     denominator_inhabitants: Optional[bool] = False
 
