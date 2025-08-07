@@ -5,6 +5,7 @@ import warnings
 
 import pandas as pd
 
+from openlifeworlds.config.data_transformation_loader import DataTransformation
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -12,8 +13,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 @TrackingDecorator.track_time
 def blend_data(
-    data_product_manifest,
-    data_transformation,
+    data_transformation: DataTransformation,
     source_path,
     results_path,
     clean=False,
