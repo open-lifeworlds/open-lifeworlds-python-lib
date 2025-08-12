@@ -187,8 +187,6 @@ def blend_data(
                                             value = numerator / population
                                         except:
                                             pass
-                                    else:
-                                        continue
 
                                     try:
                                         # Convert value to float or int
@@ -199,10 +197,10 @@ def blend_data(
                                         )
 
                                         feature["properties"][
-                                            f"{source_file.source_file_prefix}{attribute.name}"
+                                            f"{source_file.source_file_prefix}{attribute.name if attribute.rename is None else attribute.rename}"
                                         ] = value
                                         json_statistics[year][half_year][id][
-                                            f"{source_file.source_file_prefix}{attribute.name}"
+                                            f"{source_file.source_file_prefix}{attribute.name if attribute.rename is None else attribute.rename}"
                                         ] = value
                                     except:
                                         pass
