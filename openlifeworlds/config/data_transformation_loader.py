@@ -20,6 +20,7 @@ class Attribute:
     denominator: Optional[str] = None
     denominator_area_sqkm: Optional[bool] = False
     denominator_inhabitants: Optional[bool] = False
+    denominator_100k_inhabitants: Optional[bool] = False
 
 
 @dataclass

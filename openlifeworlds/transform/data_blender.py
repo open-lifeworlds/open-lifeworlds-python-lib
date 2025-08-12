@@ -88,9 +88,9 @@ def blend_data(
                                             source_path, file.population_file_name
                                         )
                                     )
-                                    population = csv_population_dataframe.loc[
+                                    population = int(csv_population_dataframe.loc[
                                         csv_population_dataframe["id"] == id
-                                    ].iloc[0]["inhabitants"]
+                                    ].iloc[0]["inhabitants"])
 
                                 # Build statistics structure
                                 if id not in json_statistics[year][half_year]:
@@ -153,6 +153,7 @@ def blend_data(
                                         and len(statistic_filtered[attribute.numerator])
                                         > 0
                                         and attribute.denominator_area_sqkm
+                                        and area_sqkm != 0
                                     ):
                                         # Look up value
                                         numerator = statistic_filtered[
@@ -185,6 +186,26 @@ def blend_data(
 
                                             # Divide value by population
                                             value = numerator / population
+                                        except:
+                                            pass
+                                    elif (
+                                        attribute.numerator in statistic_filtered
+                                        and len(statistic_filtered[attribute.numerator])
+                                        > 0
+                                        and attribute.denominator_100k_inhabitants
+                                        and population != 0
+                                    ):
+                                        # Look up value
+                                        numerator = statistic_filtered[
+                                            attribute.numerator
+                                        ].iloc[0]
+
+                                        try:
+                                            # Convert value to float or int
+                                            numerator = float(numerator)
+
+                                            # Divide value by population
+                                            value = numerator / (population / 100_000)
                                         except:
                                             pass
 
