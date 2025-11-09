@@ -76,6 +76,7 @@ def update_data_product_manifest(
                                 [file for file in files if file.endswith(file_endings)]
                             )
                         ],
+                        manifest_url=None
                     )
                 )
 

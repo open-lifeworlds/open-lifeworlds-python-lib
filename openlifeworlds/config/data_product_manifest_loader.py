@@ -29,8 +29,9 @@ class Metadata:
 @dataclass
 class Port:
     id: str
-    metadata: Metadata
+    metadata: Optional[Metadata]
     files: Optional[List[str]]
+    manifest_url: Optional[str]
 
 
 @dataclass

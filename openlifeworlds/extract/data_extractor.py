@@ -3,8 +3,9 @@ import zipfile
 import urllib.parse
 
 import requests
+import yaml
 
-from openlifeworlds.config.data_product_manifest_loader import DataProductManifest
+from openlifeworlds.config.data_product_manifest_loader import DataProductManifest, load_data_product_manifest
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
 
@@ -21,13 +22,14 @@ def extract_data(
             # Make results path
             os.makedirs(os.path.join(results_path, input_port.id), exist_ok=True)
 
-            # Iterate over files
-            for url in input_port.files:
+            if input_port.manifest_url is not None:
+                url = input_port.manifest_url
+
                 # Determine file path
-                file_name = urllib.parse.unquote(url.rsplit("/", 1)[-1])
+                file_name = "data-product-manifest.yml"
                 file_path = os.path.join(results_path, input_port.id, file_name)
 
-                # Download file
+                # Download manifest
                 download_file(
                     file_path=file_path,
                     file_name=file_name,
@@ -36,9 +38,59 @@ def extract_data(
                     quiet=quiet,
                 )
 
-                # Unzip file
-                if file_name.endswith(".zip"):
-                    unzip_file(file_path=file_path, file_name=file_name, quiet=quiet)
+                # Load manifest
+                nested_manifest = load_data_product_manifest(os.path.dirname(file_path))
+
+                # Iterate over output ports
+                for nested_output_port in nested_manifest.output_ports:
+                    # Make results path
+                    os.makedirs(
+                        os.path.join(
+                            results_path, input_port.id, nested_output_port.id
+                        ),
+                        exist_ok=True,
+                    )
+
+                    # Iterate over files
+                    for url in nested_output_port.files:
+                        # Determine file path
+                        file_name = url.rsplit("/", 1)[-1]
+                        file_path = os.path.join(
+                            results_path,
+                            input_port.id,
+                            nested_output_port.id,
+                            file_name,
+                        )
+
+                        # Download file
+                        download_file(
+                            file_path=file_path,
+                            file_name=file_name,
+                            url=url,
+                            clean=clean,
+                            quiet=quiet,
+                        )
+            if input_port.files is not None:
+                # Iterate over files
+                for url in input_port.files:
+                    # Determine file path
+                    file_name = urllib.parse.unquote(url.rsplit("/", 1)[-1])
+                    file_path = os.path.join(results_path, input_port.id, file_name)
+
+                    # Download file
+                    download_file(
+                        file_path=file_path,
+                        file_name=file_name,
+                        url=url,
+                        clean=clean,
+                        quiet=quiet,
+                    )
+
+                    # Unzip file
+                    if file_name.endswith(".zip"):
+                        unzip_file(
+                            file_path=file_path, file_name=file_name, quiet=quiet
+                        )
 
 
 def download_file(file_path, file_name, url, clean, quiet):

@@ -5,6 +5,7 @@ import warnings
 
 import pandas as pd
 
+from openlifeworlds.config.data_product_manifest_loader import DataProductManifest
 from openlifeworlds.config.data_transformation_loader import DataTransformation
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
@@ -13,6 +14,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 @TrackingDecorator.track_time
 def blend_data(
+    data_product_manifest: DataProductManifest,
     data_transformation: DataTransformation,
     source_path,
     results_path,
@@ -88,9 +90,11 @@ def blend_data(
                                             source_path, file.population_file_name
                                         )
                                     )
-                                    population = int(csv_population_dataframe.loc[
-                                        csv_population_dataframe["id"] == id
-                                    ].iloc[0]["inhabitants"])
+                                    population = int(
+                                        csv_population_dataframe.loc[
+                                            csv_population_dataframe["id"] == id
+                                        ].iloc[0]["inhabitants"]
+                                    )
 
                                 # Build statistics structure
                                 if id not in json_statistics[year][half_year]:
