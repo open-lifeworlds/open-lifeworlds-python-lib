@@ -80,7 +80,7 @@ def blend_data(
                                 key=lambda feature: feature["properties"]["id"],
                             ):
                                 id = feature["properties"]["id"]
-                                area_sqm = feature["properties"]["area"]
+                                area_sqm = feature["properties"]["area"] if "area" in feature["properties"] else 0
                                 area_sqkm = area_sqm / 1_000_000
 
                                 population = 0
