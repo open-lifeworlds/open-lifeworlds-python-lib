@@ -5,7 +5,10 @@ import urllib.parse
 import requests
 import yaml
 
-from openlifeworlds.config.data_product_manifest_loader import DataProductManifest, load_data_product_manifest
+from openlifeworlds.config.data_product_manifest_loader import (
+    DataProductManifest,
+    load_data_product_manifest,
+)
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
 
