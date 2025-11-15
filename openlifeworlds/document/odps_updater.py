@@ -18,7 +18,7 @@ def update_odps(
     data_product_manifest: DataProductManifest,
     odps: ODPS,
     config_path,
-    output_file_formats: list[str],
+    output_file_formats: list[str] = [],
 ):
     odps_path = os.path.join(config_path, "odps.yml")
 
@@ -30,7 +30,7 @@ def update_odps(
 
     if odps.product.dataHolder is None:
         odps.product.dataHolder = DataHolder()
-    odps.product.dataHolder.URL = "https://opendataproduct.de"
+    odps.product.dataHolder.URL = "https://openlifeworlds.de"
 
     if odps.product.en is None:
         odps.product.en = LocalizedInfo()
