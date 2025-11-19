@@ -21,6 +21,7 @@ class Attribute:
     denominator_area_sqkm: Optional[bool] = False
     denominator_inhabitants: Optional[bool] = False
     denominator_100k_inhabitants: Optional[bool] = False
+    denominator_inhabitants_age_below_6: Optional[bool] = False
 
 
 @dataclass

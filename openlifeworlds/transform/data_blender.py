@@ -53,8 +53,10 @@ def blend_data(
                     f"{input_port_group.id}-geojson",
                     file.target_file_name,
                 )
-                geojson_template_file_path = os.path.join(
-                    source_path, file.geojson_template_file_name
+                geojson_template_file_path = (
+                    os.path.join(source_path, file.geojson_template_file_name)
+                    if file.geojson_template_file_name is not None
+                    else None
                 )
 
                 try:
@@ -88,6 +90,7 @@ def blend_data(
                                 area_sqkm = area_sqm / 1_000_000
 
                                 population = 0
+                                population_age_below_6 = 0
                                 if file.population_file_name is not None:
                                     csv_population_dataframe = load_csv_file(
                                         os.path.join(
@@ -98,6 +101,11 @@ def blend_data(
                                         csv_population_dataframe.loc[
                                             csv_population_dataframe["id"] == id
                                         ].iloc[0]["inhabitants"]
+                                    )
+                                    population_age_below_6 = int(
+                                        csv_population_dataframe.loc[
+                                            csv_population_dataframe["id"] == id
+                                        ].iloc[0]["inhabitants_age_below_6"]
                                     )
 
                                 # Build statistics structure
@@ -216,6 +224,26 @@ def blend_data(
                                             value = numerator / (population / 100_000)
                                         except:
                                             pass
+                                    elif (
+                                        attribute.numerator in statistic_filtered
+                                        and len(statistic_filtered[attribute.numerator])
+                                        > 0
+                                        and attribute.denominator_inhabitants_age_below_6
+                                        and population_age_below_6 != 0
+                                    ):
+                                        # Look up value
+                                        numerator = statistic_filtered[
+                                            attribute.numerator
+                                        ].iloc[0]
+
+                                        try:
+                                            # Convert value to float or int
+                                            numerator = float(numerator)
+
+                                            # Divide value by population
+                                            value = numerator / population_age_below_6
+                                        except:
+                                            pass
 
                                     try:
                                         # Convert value to float or int
@@ -281,11 +309,9 @@ def load_geojson_file(geojson_template_file_path):
     with open(
         file=geojson_template_file_path, mode="r", encoding="utf-8"
     ) as geojson_file:
-        geojson = json.load(geojson_file, strict=False)
-        return geojson
+        return json.load(geojson_file, strict=False)
 
 
 def load_csv_file(source_file_path):
     with open(source_file_path, "r") as csv_file:
-        csv = pd.read_csv(csv_file, dtype=str)
-        return csv
+        return pd.read_csv(csv_file, dtype=str)
