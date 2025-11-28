@@ -6,9 +6,9 @@ import yaml
 
 from openlifeworlds.config.data_product_manifest_loader import (
     DataProductManifest,
-    Port,
     Metadata,
 )
+from openlifeworlds.config.data_product_manifest_loader import ExtendedPort
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
 
@@ -53,7 +53,7 @@ def update_data_product_manifest(
                     else None
                 )
                 output_ports.append(
-                    Port(
+                    ExtendedPort(
                         id=id,
                         metadata=Metadata(
                             name=id.replace("-", " ").title(),
@@ -76,7 +76,6 @@ def update_data_product_manifest(
                                 [file for file in files if file.endswith(file_endings)]
                             )
                         ],
-                        manifest_url=None,
                     )
                 )
 

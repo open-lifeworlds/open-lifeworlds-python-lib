@@ -3,11 +3,12 @@ import zipfile
 import urllib.parse
 
 import requests
-import yaml
 
 from openlifeworlds.config.data_product_manifest_loader import (
     DataProductManifest,
     load_data_product_manifest,
+    SimplePort,
+    ExtendedPort,
 )
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
@@ -22,35 +23,34 @@ def extract_data(
     # Iterate over input ports
     if data_product_manifest.input_ports:
         for input_port in data_product_manifest.input_ports:
-            # Make results path
-            os.makedirs(os.path.join(results_path, input_port.id), exist_ok=True)
-
-            if input_port.manifest_url is not None:
+            if isinstance(input_port, SimplePort):
                 url = input_port.manifest_url
 
                 # Determine file path
-                file_name = "data-product-manifest.yml"
-                file_path = os.path.join(results_path, input_port.id, file_name)
+                nested_manifest_path = os.path.join(
+                    results_path, f"{input_port.id}-data-product-manifest.yml"
+                )
 
                 # Download manifest
                 download_file(
-                    file_path=file_path,
-                    file_name=file_name,
+                    file_path=nested_manifest_path,
+                    file_name=os.path.basename(nested_manifest_path),
                     url=url,
-                    clean=clean,
+                    clean=True,
                     quiet=quiet,
                 )
 
                 # Load manifest
-                nested_manifest = load_data_product_manifest(os.path.dirname(file_path))
+                nested_manifest = load_data_product_manifest(
+                    os.path.dirname(nested_manifest_path),
+                    os.path.basename(nested_manifest_path),
+                )
 
                 # Iterate over output ports
                 for nested_output_port in nested_manifest.output_ports:
                     # Make results path
                     os.makedirs(
-                        os.path.join(
-                            results_path, input_port.id, nested_output_port.id
-                        ),
+                        os.path.join(results_path, nested_output_port.id),
                         exist_ok=True,
                     )
 
@@ -60,7 +60,6 @@ def extract_data(
                         file_name = url.rsplit("/", 1)[-1]
                         file_path = os.path.join(
                             results_path,
-                            input_port.id,
                             nested_output_port.id,
                             file_name,
                         )
@@ -73,11 +72,11 @@ def extract_data(
                             clean=clean,
                             quiet=quiet,
                         )
-            if input_port.files is not None:
+            if isinstance(input_port, ExtendedPort):
                 # Iterate over files
                 for url in input_port.files:
                     # Determine file path
-                    file_name = urllib.parse.unquote(url.rsplit("/", 1)[-1])
+                    file_name = urllib.parse.unquote(str(url).rsplit("/", 1)[-1])
                     file_path = os.path.join(results_path, input_port.id, file_name)
 
                     # Download file

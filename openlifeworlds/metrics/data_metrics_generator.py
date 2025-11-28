@@ -5,7 +5,7 @@ from dataclasses import asdict
 
 import yaml
 
-from openlifeworlds.config.data_product_manifest_loader import File, QualityMetric
+from openlifeworlds.config.data_product_manifest_loader import MetricFile, QualityMetric
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -61,7 +61,7 @@ def generate_geojson_property_completeness_metrics(
                                 count += 1
 
                     files.append(
-                        File(
+                        MetricFile(
                             name=file.target_file_name,
                             value=round((count / count_all * 100)),
                         )

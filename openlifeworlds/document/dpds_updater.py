@@ -2,6 +2,8 @@ import os
 from dataclasses import asdict
 
 import yaml
+from attr.validators import instance_of
+from openlifeworlds.config.data_product_manifest_loader import ExtendedPort
 from openlifeworlds.tracking_decorator import TrackingDecorator
 
 from openlifeworlds.config.dpds_loader import (
@@ -56,7 +58,8 @@ def update_dpds(data_product_manifest, dpds, config_path):
         input_port = InputPort()
         input_port.id = port.id
         input_port.fullyQualifiedName = port.id
-        input_port.description = port.metadata.description
+        if isinstance(port, ExtendedPort):
+            input_port.description = port.metadata.description
 
         dpds.interfaceComponents.inputPorts.append(input_port)
 
