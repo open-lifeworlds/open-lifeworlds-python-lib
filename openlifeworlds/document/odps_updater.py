@@ -22,7 +22,7 @@ def update_odps(
 ):
     odps_path = os.path.join(config_path, "odps.yml")
 
-    odps.schema = "https://opendataproducts.org/v3.1/schema/odps.yaml"
+    odps.schema = "https://openlifeworldss.org/v3.1/schema/odps.yaml"
     odps.version = "3.1"
 
     if odps.product is None:
@@ -41,7 +41,7 @@ def update_odps(
     odps.product.en.version = "1.0"
     odps.product.en.tags = data_product_manifest.tags
     odps.product.en.type = "source-aligned"
-    odps.product.en.logoURL = f"https://raw.githubusercontent.com/open-lifeworlds/open-lifeworlds-data-product-{data_product_manifest.id}/refs/heads/main/logo-with-text.png"
+    odps.product.en.logoURL = f"https://raw.githubusercontent.com/open-data-product/open-data-product-{data_product_manifest.id}/refs/heads/main/logo-with-text.png"
     odps.product.en.OutputFileFormats = (
         output_file_formats if output_file_formats is not None else []
     )

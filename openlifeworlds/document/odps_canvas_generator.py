@@ -370,7 +370,7 @@ def generate_odps_canvas(
 
     content += "\n"
     content += "\n---"
-    content += "\nThis Open Data Product Specification canvas is based on [OPEN DATA PRODUCT SPECIFICATION 3.1](https://opendataproducts.org/v3.1/#open-data-product-specification-3-1)."
+    content += "\nThis Open Data Product Specification canvas is based on [OPEN DATA PRODUCT SPECIFICATION 3.1](https://openlifeworldss.org/v3.1/#open-data-product-specification-3-1)."
 
     with open(odps_canvas_path, "w") as file:
         file.write(content)
