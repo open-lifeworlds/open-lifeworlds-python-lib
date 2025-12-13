@@ -26,7 +26,7 @@ def generate_points(
         source_path, "berlin-lor-city", "berlin-lor-city.geojson"
     )
     points_geojson_path = os.path.join(
-        results_path, f"berlin-15-minute-city", f"points-{grid_spacing_meters}.geojson"
+        results_path, f"berlin-points", f"points-{grid_spacing_meters}.geojson"
     )
 
     if clean or not os.path.exists(points_geojson_path):

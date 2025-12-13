@@ -134,7 +134,7 @@ def create_jupyter_notebook_for_geojson(
 
     if geojson_file_path_relative is None:
         print(
-            f"✗️ Warning: no csv file found in {os.path.join(results_path, "data", "03-gold")}"
+            f"✗️ Warning: no geojson file found in {os.path.join(results_path, "data", "03-gold")}"
         )
         return
 
