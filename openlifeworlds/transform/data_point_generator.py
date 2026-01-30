@@ -1,6 +1,7 @@
 import json
 import os
 
+import h3
 import numpy as np
 from shapely.geometry import Point
 from shapely.geometry import shape
@@ -9,7 +10,7 @@ from openlifeworlds.tracking_decorator import TrackingDecorator
 
 
 @TrackingDecorator.track_time
-def generate_points(
+def generate_points_rectangle(
     results_path,
     query,
     geojson_feature,
@@ -18,7 +19,7 @@ def generate_points(
     quiet=False,
 ):
     """
-    Generates points in a given grid
+    Generates points based in a rectangular grid in a given distance
     :param results_path: results path
     :param query: query
     :param geojson_feature: geojson_feature
@@ -41,21 +42,14 @@ def generate_points(
     )
 
     if clean or not os.path.exists(points_geojson_path):
-        points = generate_points_in_grid(geojson_feature, grid_spacing_meters)
-        points_geojson = generate_geojson(points)
+        points = generate_points_in_rectangular_grid(geojson_feature, grid_spacing_meters)
+        points_geojson = build_geojson(points)
         write_geojson_file(points_geojson_path, points_geojson, clean, quiet)
     else:
         print(f"✓ Already exists {os.path.basename(points_geojson_path)}")
 
 
-def load_geojson_file(geojson_template_file_path):
-    with open(
-        file=geojson_template_file_path, mode="r", encoding="utf-8"
-    ) as geojson_file:
-        return json.load(geojson_file, strict=False)
-
-
-def generate_points_in_grid(geojson_feature, grid_spacing_meters):
+def generate_points_in_rectangular_grid(geojson_feature, grid_spacing_meters):
     xmin, ymin, xmax, ymax = build_bounding_box_with_padding(geojson_feature)
 
     factor_degree_to_meters = (
@@ -103,8 +97,78 @@ def build_bounding_box_with_padding(geojson_feature):
 def is_point_inside_feature(geojson_feature, point):
     return shape(geojson_feature["geometry"]).contains(Point(point[0], point[1]))
 
+@TrackingDecorator.track_time
+def generate_points_hexagon(
+    results_path,
+    query,
+    geojson_feature,
+    hexagon_resolution=7,
+    clean=False,
+    quiet=False,
+):
+    """
+    Generates points based on a hexagonal grid in a given resolution
+    with 6 points per hexagon positioned halfway between the center and each corner
+    """
 
-def generate_geojson(points):
+    # Define area prefix
+    area_prefix = (
+        "-".join(list(reversed(query.split(",")))[1:]).lower().replace(" ", "")
+    )
+
+    # Define file paths
+    points_geojson_path = os.path.join(
+        results_path,
+        f"{area_prefix}-points",
+        f"{area_prefix}-points-{hexagon_resolution}.geojson",
+    )
+
+    if clean or not os.path.exists(points_geojson_path):
+        points = generate_points_in_hexagonal_grid(geojson_feature, hexagon_resolution)
+        points_geojson = build_geojson(points)
+        write_geojson_file(points_geojson_path, points_geojson, clean, quiet)
+    else:
+        print(f"✓ Already exists {os.path.basename(points_geojson_path)}")
+
+
+def generate_points_in_hexagonal_grid(geojson_feature, hexagon_resolution):
+
+    # Build hexagons
+    hexagons = h3.polygon_to_cells(
+        h3.LatLngPoly([(lon, lat) for lon, lat in geojson_feature['geometry']['coordinates'][0]]),
+        res=hexagon_resolution
+    )
+
+    points = []
+
+    # Iterate over hexagons
+    for hex_id in hexagons:
+        # Get center
+        center_lat, center_lon = h3.cell_to_latlng(hex_id)
+
+        # Get Boundary Vertices [(lat, lng), (lat, lng), ...]
+        boundary = h3.cell_to_boundary(hex_id)
+
+        # Calculate the 6 halfway points
+        hex_points = []
+        for vertex_lat, vertex_lng in boundary:
+            # Apply simple linear interpolation
+            mid_lat = (center_lat + vertex_lat) / 2
+            mid_lng = (center_lon + vertex_lng) / 2
+            hex_points.append((mid_lat, mid_lng))
+
+        points.extend(hex_points)
+
+    return points
+
+
+
+
+#
+# Helpers
+#
+
+def build_geojson(points):
     return {
         "type": "FeatureCollection",
         "crs": {
@@ -120,11 +184,6 @@ def generate_geojson(points):
             for point in points
         ],
     }
-
-
-def read_geojson_file(file_path):
-    with open(file=file_path, mode="r", encoding="utf-8") as geojson_file:
-        return json.load(geojson_file, strict=False)
 
 
 def write_geojson_file(target_file_path, geojson, clean, quiet):
