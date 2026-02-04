@@ -42,7 +42,9 @@ def generate_points_rectangle(
     )
 
     if clean or not os.path.exists(points_geojson_path):
-        points = generate_points_in_rectangular_grid(geojson_feature, grid_spacing_meters)
+        points = generate_points_in_rectangular_grid(
+            geojson_feature, grid_spacing_meters
+        )
         points_geojson = build_geojson(points)
         write_geojson_file(points_geojson_path, points_geojson, clean, quiet)
     else:
@@ -97,18 +99,21 @@ def build_bounding_box_with_padding(geojson_feature):
 def is_point_inside_feature(geojson_feature, point):
     return shape(geojson_feature["geometry"]).contains(Point(point[0], point[1]))
 
+
 @TrackingDecorator.track_time
 def generate_points_hexagon(
     results_path,
     query,
     geojson_feature,
     hexagon_resolution=7,
+    dense=False,
     clean=False,
     quiet=False,
 ):
     """
     Generates points based on a hexagonal grid in a given resolution
-    with 6 points per hexagon positioned halfway between the center and each corner
+    dense = True -> 6 points per hexagon halfway between center and corners
+    dense = False -> 1 point per hexagon at center
     """
 
     # Define area prefix
@@ -124,19 +129,22 @@ def generate_points_hexagon(
     )
 
     if clean or not os.path.exists(points_geojson_path):
-        points = generate_points_in_hexagonal_grid(geojson_feature, hexagon_resolution)
+        points = generate_points_in_hexagonal_grid(
+            geojson_feature, hexagon_resolution, dense
+        )
         points_geojson = build_geojson(points)
         write_geojson_file(points_geojson_path, points_geojson, clean, quiet)
     else:
         print(f"✓ Already exists {os.path.basename(points_geojson_path)}")
 
 
-def generate_points_in_hexagonal_grid(geojson_feature, hexagon_resolution):
-
+def generate_points_in_hexagonal_grid(geojson_feature, hexagon_resolution, dense=False):
     # Build hexagons
     hexagons = h3.polygon_to_cells(
-        h3.LatLngPoly([(lon, lat) for lon, lat in geojson_feature['geometry']['coordinates'][0]]),
-        res=hexagon_resolution
+        h3.LatLngPoly(
+            [(lon, lat) for lon, lat in geojson_feature["geometry"]["coordinates"][0]]
+        ),
+        res=hexagon_resolution,
     )
 
     points = []
@@ -146,27 +154,31 @@ def generate_points_in_hexagonal_grid(geojson_feature, hexagon_resolution):
         # Get center
         center_lat, center_lon = h3.cell_to_latlng(hex_id)
 
-        # Get Boundary Vertices [(lat, lng), (lat, lng), ...]
-        boundary = h3.cell_to_boundary(hex_id)
+        # Check if points shall be generated densely
+        if dense:
+            # Get Boundary Vertices [(lat, lng), (lat, lng), ...]
+            boundary = h3.cell_to_boundary(hex_id)
 
-        # Calculate the 6 halfway points
-        hex_points = []
-        for vertex_lat, vertex_lng in boundary:
-            # Apply simple linear interpolation
-            mid_lat = (center_lat + vertex_lat) / 2
-            mid_lng = (center_lon + vertex_lng) / 2
-            hex_points.append((mid_lat, mid_lng))
+            # Calculate the 6 halfway points
+            hex_points = []
+            for vertex_lat, vertex_lng in boundary:
+                # Apply simple linear interpolation
+                mid_lat = (center_lat + vertex_lat) / 2
+                mid_lng = (center_lon + vertex_lng) / 2
+                hex_points.append((mid_lat, mid_lng))
 
-        points.extend(hex_points)
+            points.extend(hex_points)
+
+        else:
+            points.append((center_lat, center_lon))
 
     return points
-
-
 
 
 #
 # Helpers
 #
+
 
 def build_geojson(points):
     return {
