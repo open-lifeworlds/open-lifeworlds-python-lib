@@ -140,10 +140,13 @@ def generate_points_hexagon(
 
 def generate_points_in_hexagonal_grid(geojson_feature, hexagon_resolution, dense=False):
     # Build hexagons
+    coordinates = (
+        geojson_feature["geometry"]["coordinates"][0]
+        if geojson_feature["geometry"]["type"] == "Polygon"
+        else geojson_feature["geometry"]["coordinates"][0][0]
+    )
     hexagons = h3.polygon_to_cells(
-        h3.LatLngPoly(
-            [(lon, lat) for lon, lat in geojson_feature["geometry"]["coordinates"][0]]
-        ),
+        h3.LatLngPoly([(lon, lat) for lon, lat in coordinates]),
         res=hexagon_resolution,
     )
 
