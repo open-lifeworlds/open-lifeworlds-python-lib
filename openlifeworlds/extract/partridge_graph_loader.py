@@ -40,8 +40,8 @@ def load_transit_graph(
     # Define file paths
     gtfs_file_path = os.path.join(
         source_path,
-        f"berlin-public-transport-gtfs-{year}-00",
-        f"berlin-public-transport-gtfs-{year}-00.zip",
+        f"{area_prefix}-public-transport-gtfs-{year}-00",
+        f"{area_prefix}-public-transport-gtfs-{year}-00.zip",
     )
     graph_file_path = os.path.join(
         results_path,

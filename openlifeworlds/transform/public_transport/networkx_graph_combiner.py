@@ -42,7 +42,7 @@ def combine_graphs(
     )
     pickle_file_path = os.path.join(
         results_path,
-        "berlin-networkx",
+        f"{area_prefix}-networkx",
         f"{area_prefix}-combined-{year}-{time_window_suffix}.pkl",
     )
     geojson_nodes_file_path = os.path.join(

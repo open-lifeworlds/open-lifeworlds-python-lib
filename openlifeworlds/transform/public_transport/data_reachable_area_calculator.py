@@ -180,7 +180,7 @@ def enhance_feature(
         write_gdf_as_geojson(
             os.path.join(
                 results_path,
-                "berlin-reachable-area",
+                f"{area_prefix}-reachable-area",
                 f"{hexagon_resolution}",
                 f"{area_prefix}-reachable-area-convex-hull-{reference_point.x}-{reference_point.y}.geojson",
             ),
@@ -192,7 +192,7 @@ def enhance_feature(
         write_gdf_as_geojson(
             os.path.join(
                 results_path,
-                "berlin-reachable-area",
+                f"{area_prefix}-reachable-area",
                 f"{hexagon_resolution}",
                 f"{area_prefix}-reachable-area-concave-hull-{reference_point.x}-{reference_point.y}.geojson",
             ),
@@ -204,7 +204,7 @@ def enhance_feature(
         write_gdf_as_geojson(
             os.path.join(
                 results_path,
-                "berlin-reachable-area",
+                f"{area_prefix}-reachable-area",
                 f"{hexagon_resolution}",
                 f"{area_prefix}-reachable-area-union-of-buffers-{reference_point.x}-{reference_point.y}.geojson",
             ),
