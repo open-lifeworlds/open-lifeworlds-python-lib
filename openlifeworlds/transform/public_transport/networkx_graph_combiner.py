@@ -48,12 +48,12 @@ def combine_graphs(
     geojson_nodes_file_path = os.path.join(
         results_path,
         f"{area_prefix}-networkx",
-        f"{area_prefix}-{year}-{time_window_suffix}-combined-nodes.geojson",
+        f"{area_prefix}-combined-{year}-{time_window_suffix}-nodes.geojson",
     )
     geojson_edges_file_path = os.path.join(
         results_path,
         f"{area_prefix}-networkx",
-        f"{area_prefix}-{year}-{time_window_suffix}-combined-edges.geojson",
+        f"{area_prefix}-combined-{year}-{time_window_suffix}-edges.geojson",
     )
 
     # Check if result needs to be generated
