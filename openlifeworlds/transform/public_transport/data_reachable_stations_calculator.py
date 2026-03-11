@@ -6,16 +6,16 @@ from shapely import concave_hull
 def calculate_reachable_stations_convex_hull(
     points_utm,
     buffer_meters,
-    bus_gdf=None,
-    ferry_gdf=None,
-    sbahn_gdf=None,
-    tram_gdf=None,
-    ubahn_gdf=None,
-) -> gpd.GeoDataFrame:
+    transit_geodataframes=None,
+) -> (dict[str, int], gpd.GeoDataFrame):
     # Calculate convex hull
     # Using unary_union directly on the GeoSeries of points to properly handle MultiPoint input for convex_hull if needed,
     # though usually convex_hull can take a MultiPoint.
     # However, points_utm is now a GeoSeries (projected).
+
+    if transit_geodataframes is None:
+        transit_geodataframes = {}
+
     hull = points_utm.unary_union.convex_hull
 
     # Create geo series of the hull
@@ -33,26 +33,26 @@ def calculate_reachable_stations_convex_hull(
         index=[0], crs="epsg:4326", geometry=[reachable_shape_lat_lon]
     )
 
-    # Identify stations within the reachable area using spatial join
-    bus_points_gdf = gpd.sjoin(bus_gdf, reachable_gdf, predicate="within")
-    ferry_points_gdf = gpd.sjoin(ferry_gdf, reachable_gdf, predicate="within")
-    sbahn_points_gdf = gpd.sjoin(sbahn_gdf, reachable_gdf, predicate="within")
-    tram_points_gdf = gpd.sjoin(tram_gdf, reachable_gdf, predicate="within")
-    ubahn_points_gdf = gpd.sjoin(ubahn_gdf, reachable_gdf, predicate="within")
+    geodataframes = [
+        clean_geodataframe(
+            gpd.sjoin(value, reachable_gdf, predicate="within"), type=key
+        )
+        for key, value in transit_geodataframes.items()
+    ]
 
-    return gpd.GeoDataFrame(
-        pd.concat(
-            [
-                clean_geodataframe(bus_points_gdf, type="bus"),
-                clean_geodataframe(ferry_points_gdf, type="ferry"),
-                clean_geodataframe(sbahn_points_gdf, type="s-bahn"),
-                clean_geodataframe(tram_points_gdf, type="tram"),
-                clean_geodataframe(ubahn_points_gdf, type="u-bahn"),
-            ],
-            ignore_index=True,
+    return (
+        {
+            key: len(geodataframe)
+            for key, geodataframe in zip(transit_geodataframes.keys(), geodataframes)
+        },
+        gpd.GeoDataFrame(
+            pd.concat(
+                geodataframes,
+                ignore_index=True,
+            ),
+            geometry="geometry",
+            crs="EPSG:4326",
         ),
-        geometry="geometry",
-        crs="EPSG:4326",
     )
 
 
@@ -61,16 +61,16 @@ def calculate_reachable_stations_concave_hull(
     concave_hull_ratio,
     buffer_meters,
     allow_holes=False,
-    bus_gdf=None,
-    ferry_gdf=None,
-    sbahn_gdf=None,
-    tram_gdf=None,
-    ubahn_gdf=None,
+    transit_geodataframes=None,
 ) -> (dict[str, int], gpd.GeoDataFrame):
     # Calculate concave hull
     # ratio=0.0 -> convex hull (rubber band)
     # ratio=1.0 -> the tightest fit (connecting the dots)
     # ratio=0.1 to 0.3 is usually the "sweet spot" for city reachability
+
+    if transit_geodataframes is None:
+        transit_geodataframes = {}
+
     hull = concave_hull(
         points_utm.unary_union, ratio=concave_hull_ratio, allow_holes=allow_holes
     )
@@ -90,44 +90,37 @@ def calculate_reachable_stations_concave_hull(
         index=[0], crs="epsg:4326", geometry=[reachable_shape_lat_lon]
     )
 
-    # Identify stations within the reachable area using spatial join
-    bus_points_gdf = gpd.sjoin(bus_gdf, reachable_gdf, predicate="within")
-    ferry_points_gdf = gpd.sjoin(ferry_gdf, reachable_gdf, predicate="within")
-    sbahn_points_gdf = gpd.sjoin(sbahn_gdf, reachable_gdf, predicate="within")
-    tram_points_gdf = gpd.sjoin(tram_gdf, reachable_gdf, predicate="within")
-    ubahn_points_gdf = gpd.sjoin(ubahn_gdf, reachable_gdf, predicate="within")
+    geodataframes = [
+        clean_geodataframe(
+            gpd.sjoin(value, reachable_gdf, predicate="within"), type=key
+        )
+        for key, value in transit_geodataframes.items()
+    ]
 
-    return {
-        "bus": len(bus_points_gdf),
-        "ferry": len(ferry_points_gdf),
-        "s-bahn": len(sbahn_points_gdf),
-        "tram": len(tram_points_gdf),
-        "u-bahn": len(ubahn_points_gdf),
-    }, gpd.GeoDataFrame(
-        pd.concat(
-            [
-                clean_geodataframe(bus_points_gdf, type="bus"),
-                clean_geodataframe(ferry_points_gdf, type="ferry"),
-                clean_geodataframe(sbahn_points_gdf, type="s-bahn"),
-                clean_geodataframe(tram_points_gdf, type="tram"),
-                clean_geodataframe(ubahn_points_gdf, type="u-bahn"),
-            ],
-            ignore_index=True,
+    return (
+        {
+            key: len(geodataframe)
+            for key, geodataframe in zip(transit_geodataframes.keys(), geodataframes)
+        },
+        gpd.GeoDataFrame(
+            pd.concat(
+                geodataframes,
+                ignore_index=True,
+            ),
+            geometry="geometry",
+            crs="EPSG:4326",
         ),
-        geometry="geometry",
-        crs="EPSG:4326",
     )
 
 
 def calculate_reachable_stations_union_of_buffers(
     points_utm,
     buffer_meters,
-    bus_gdf=None,
-    ferry_gdf=None,
-    sbahn_gdf=None,
-    tram_gdf=None,
-    ubahn_gdf=None,
-) -> gpd.GeoDataFrame:
+    transit_geodataframes=None,
+) -> (dict[str, int], gpd.GeoDataFrame):
+    if transit_geodataframes is None:
+        transit_geodataframes = {}
+
     # Optimized: Union points first (cheap), then buffer (fast)
     # This avoids unioning thousands of circles and leverages GEOS efficient MultiPoint buffering
     reachable_shape_meters = points_utm.unary_union.buffer(buffer_meters, resolution=4)
@@ -141,26 +134,26 @@ def calculate_reachable_stations_union_of_buffers(
         index=[0], crs="epsg:4326", geometry=[reachable_shape_lat_lon]
     )
 
-    # Identify stations within the reachable area using spatial join
-    bus_points_gdf = gpd.sjoin(bus_gdf, reachable_gdf, predicate="within")
-    ferry_points_gdf = gpd.sjoin(ferry_gdf, reachable_gdf, predicate="within")
-    sbahn_points_gdf = gpd.sjoin(sbahn_gdf, reachable_gdf, predicate="within")
-    tram_points_gdf = gpd.sjoin(tram_gdf, reachable_gdf, predicate="within")
-    ubahn_points_gdf = gpd.sjoin(ubahn_gdf, reachable_gdf, predicate="within")
+    geodataframes = [
+        clean_geodataframe(
+            gpd.sjoin(value, reachable_gdf, predicate="within"), type=key
+        )
+        for key, value in transit_geodataframes.items()
+    ]
 
-    return gpd.GeoDataFrame(
-        pd.concat(
-            [
-                clean_geodataframe(bus_points_gdf, type="bus"),
-                clean_geodataframe(ferry_points_gdf, type="ferry"),
-                clean_geodataframe(sbahn_points_gdf, type="s-bahn"),
-                clean_geodataframe(tram_points_gdf, type="tram"),
-                clean_geodataframe(ubahn_points_gdf, type="u-bahn"),
-            ],
-            ignore_index=True,
+    return (
+        {
+            key: len(geodataframe)
+            for key, geodataframe in zip(transit_geodataframes.keys(), geodataframes)
+        },
+        gpd.GeoDataFrame(
+            pd.concat(
+                geodataframes,
+                ignore_index=True,
+            ),
+            geometry="geometry",
+            crs="EPSG:4326",
         ),
-        geometry="geometry",
-        crs="EPSG:4326",
     )
 
 
