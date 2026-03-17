@@ -73,6 +73,12 @@ def extract_data(
                             quiet=quiet,
                         )
             if isinstance(input_port, ExtendedPort):
+                # Make results path
+                os.makedirs(
+                    os.path.join(results_path, input_port.id),
+                    exist_ok=True,
+                )
+
                 # Iterate over files
                 for url in input_port.files:
                     # Determine file path
