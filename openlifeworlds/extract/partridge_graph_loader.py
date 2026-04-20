@@ -1,15 +1,18 @@
 import os
 import pickle
+import zipfile
 from functools import cache
 
 import networkx as nx
 import numpy as np
 import osmnx as ox
+import pandas as pd
 import partridge as ptg
 from networkx import MultiDiGraph
-from openlifeworlds.tracking_decorator import TrackingDecorator
 from shapely import Point
 from shapely.geometry import shape
+
+from openlifeworlds.tracking_decorator import TrackingDecorator
 
 
 @TrackingDecorator.track_time
@@ -70,15 +73,15 @@ def load_transit_graph(
         # Load and filter GTFS data
         #
 
-        # Identify service IDs that are active on the first date
+        # Identify service IDs that are active on the reference date
         service_ids_by_date = ptg.read_service_ids_by_date(gtfs_file_path)
-        service_ids_first_date = list(service_ids_by_date)[0]
-        service_ids_on_first_date = service_ids_by_date.get(service_ids_first_date)
+        refrence_date = get_reference_date(gtfs_file_path)
+        service_ids_on_reference_date = service_ids_by_date.get(refrence_date)
 
         # Use Partridge to load ONLY the service active on that date
         feed = ptg.load_feed(
             gtfs_file_path,
-            view={"trips.txt": {"service_id": service_ids_on_first_date}},
+            view={"trips.txt": {"service_id": service_ids_on_reference_date}},
         )
 
         #
@@ -221,6 +224,55 @@ def load_transit_graph(
     else:
         not quiet and print(f"✓ Already exists {os.path.basename(graph_file_path)}")
         return load_graph_from_pickle(pickle_file_path)
+
+
+def get_reference_date(gtfs_file_path):
+    # Load GTFS zip file
+    with zipfile.ZipFile(gtfs_file_path, "r") as zip_file:
+        # Load calendar dates with exceptions
+        with zip_file.open("calendar_dates.txt") as file:
+            df_exceptions = pd.read_csv(file)
+
+        # Load calendar
+        with zip_file.open("calendar.txt") as file:
+            df_calendar = pd.read_csv(file)
+
+    # Get the date range of the feed
+    start_date = pd.to_datetime(df_calendar["start_date"].min(), format="%Y%m%d")
+    end_date = pd.to_datetime(df_calendar["end_date"].max(), format="%Y%m%d")
+    search_range = pd.date_range(start=start_date, end=end_date)
+
+    results = []
+
+    for target_date in search_range:
+        # Identify removals and weekends
+        date_str = target_date.strftime("%Y%m%d")
+        removals_count = len(
+            df_exceptions[
+                (df_exceptions["date"].astype(str) == date_str)
+                & (df_exceptions["exception_type"] == 2)
+            ]
+        )
+        is_weekend = target_date.weekday() >= 5
+
+        results.append(
+            {
+                "date_str": date_str,
+                "removals": removals_count,
+                "is_weekend": is_weekend,
+            }
+        )
+
+    # Convert to DataFrame
+    df_status = pd.DataFrame(results)
+    # Apply the weekend filter FIRST, then sort by removals
+    clean_weekdays = df_status[df_status["is_weekend"] == False].sort_values(
+        by="removals"
+    )
+
+    return (
+        df_status[~df_status["is_weekend"]].sort_values("removals").iloc[0]["date_str"]
+    )
 
 
 def build_bounding_box_with_padding(geojson_feature: {}) -> []:
